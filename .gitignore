@@ -1,0 +1,17 @@
+# Ignore airflow logs
+airflow/logs/
+airflow/log/
+airflow/logs/*
+
+# Ignore database volume
+postgres_data/
+postgres_data/*
+
+# Ignore __pycache__
+__pycache__/
+
+# Ignore compiled Python
+*.pyc
+
+# Ignore environment stuff
+.env

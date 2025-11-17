@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shopzada
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_staging:/docker-entrypoint-initdb.d
+
+  airflow:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@postgres:5432/shopzada
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:postgres@postgres:5432/shopzada
+    volumes:
+      - ./airflow:/opt/airflow
+      - ./data_raw:/opt/airflow/data_raw
+    ports:
+      - "8080:8080"
+    entrypoint: ["/opt/airflow/entrypoint.sh"]
+    restart: always
+
+volumes:
+  postgres_data:
