@@ -1,29 +1,25 @@
 import pandas as pd
 from ingestion.db import load_to_staging
+from ingestion.utils import normalize_df
 
 DATA_PATH = "/opt/airflow/data_raw/operations/"
 
-def clean_quantity(col):
-    return col.str.extract("(\d+)").astype(int)
-
-
 def ingest_line_item_prices():
-    # 3 files, different formats
     files = [
         "line_item_data_prices1.csv",
         "line_item_data_prices2.csv",
         "line_item_data_prices3.parquet"
     ]
 
+    expected = ["index_raw", "order_id", "price", "quantity"]
+
     for file in files:
         if file.endswith(".csv"):
             df = pd.read_csv(DATA_PATH + file)
-            df = df.drop(columns=["Unnamed: 0"])
         else:
             df = pd.read_parquet(DATA_PATH + file)
 
-        df["quantity"] = clean_quantity(df["quantity"])
-
+        df = normalize_df(df, expected)
         load_to_staging(df, "stg_line_item_prices")
 
 
@@ -34,13 +30,15 @@ def ingest_line_item_products():
         "line_item_data_products3.parquet"
     ]
 
+    expected = ["index_raw", "order_id", "product_name", "product_id"]
+
     for file in files:
         if file.endswith(".csv"):
             df = pd.read_csv(DATA_PATH + file)
-            df = df.drop(columns=["Unnamed: 0"])
         else:
             df = pd.read_parquet(DATA_PATH + file)
 
+        df = normalize_df(df, expected)
         load_to_staging(df, "stg_line_item_products")
 
 
@@ -54,10 +52,17 @@ def ingest_order_data():
         "order_data_20230601-20240101.html"
     ]
 
+    expected = [
+        "index_raw",
+        "order_id",
+        "user_id",
+        "estimated arrival",
+        "transaction_date"
+    ]
+
     for file in files:
         if file.endswith(".csv"):
             df = pd.read_csv(DATA_PATH + file)
-            df = df.drop(columns=["Unnamed: 0"])
         elif file.endswith(".pickle"):
             df = pd.read_pickle(DATA_PATH + file)
         elif file.endswith(".xlsx"):
@@ -66,18 +71,17 @@ def ingest_order_data():
             df = pd.read_json(DATA_PATH + file)
         elif file.endswith(".parquet"):
             df = pd.read_parquet(DATA_PATH + file)
-        else:  # HTML
+        else:
             df = pd.read_html(DATA_PATH + file)[0]
-            df = df.drop(columns=["Unnamed: 0"])
 
-        df["estimated_arrival_days"] = (
-            df["estimated arrival"].str.extract("(\d+)").astype(int)
-        )
-
+        df = normalize_df(df, expected)
         load_to_staging(df, "stg_order_data")
 
 
 def ingest_order_delays():
     df = pd.read_html(DATA_PATH + "order_delays.html")[0]
-    df = df.drop(columns=["Unnamed: 0"])
+
+    expected = ["index_raw", "order_id", "delay in days"]
+
+    df = normalize_df(df, expected)
     load_to_staging(df, "stg_order_delays")
