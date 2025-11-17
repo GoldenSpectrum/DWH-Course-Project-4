@@ -28,6 +28,13 @@ services:
       - "8080:8080"
     entrypoint: ["/opt/airflow/entrypoint.sh"]
     restart: always
+    
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+
 
 volumes:
   postgres_data:
