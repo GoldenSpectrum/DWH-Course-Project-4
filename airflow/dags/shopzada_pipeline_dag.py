@@ -17,9 +17,7 @@ from ingestion.customer_ingest import (
 from ingestion.enterprise_ingest import (
     ingest_merchant_data,
     ingest_staff_data,
-    ingest_order_with_merchant1,
-    ingest_order_with_merchant2,
-    ingest_order_with_merchant3,
+    ingest_order_with_merchant
 )
 from ingestion.marketing_ingest import (
     ingest_campaign_data,
@@ -92,20 +90,11 @@ with DAG(
         python_callable=ingest_staff_data
     )
 
-    ingest_order_with_merchant1_task = PythonOperator(
-        task_id="ingest_order_with_merchant1",
-        python_callable=ingest_order_with_merchant1
+    ingest_order_with_merchant_task = PythonOperator(
+        task_id="ingest_order_with_merchant",
+        python_callable=ingest_order_with_merchant
     )
 
-    ingest_order_with_merchant2_task = PythonOperator(
-        task_id="ingest_order_with_merchant2",
-        python_callable=ingest_order_with_merchant2
-    )
-
-    ingest_order_with_merchant3_task = PythonOperator(
-        task_id="ingest_order_with_merchant3",
-        python_callable=ingest_order_with_merchant3
-    )
 
     # -----------------------------------------
     # MARKETING TASKS
@@ -146,36 +135,7 @@ with DAG(
     # ===================================================
     # DAG DEPENDENCIES
     # ===================================================
-    # Business
-    ingest_product_list_task
-
-    # Customer
-    [ingest_user_job_task, ingest_user_data_task, ingest_user_credit_card_task]
-
-    # Enterprise
-    [
-        ingest_merchant_data_task,
-        ingest_staff_data_task,
-        ingest_order_with_merchant1_task,
-        ingest_order_with_merchant2_task,
-        ingest_order_with_merchant3_task
-    ]
-
-    # Marketing
-    [
-        ingest_campaign_data_task,
-        ingest_transactional_campaign_data_task
-    ]
-
-    # Operations
-    [
-        ingest_line_item_prices_task,
-        ingest_line_item_products_task,
-        ingest_order_data_task,
-        ingest_order_delays_task
-    ]
-
-    # Optional: Make EVERYTHING run in parallel then finish together
+    
     (
         ingest_product_list_task
         >> [
@@ -184,9 +144,7 @@ with DAG(
             ingest_user_credit_card_task,
             ingest_merchant_data_task,
             ingest_staff_data_task,
-            ingest_order_with_merchant1_task,
-            ingest_order_with_merchant2_task,
-            ingest_order_with_merchant3_task,
+            ingest_order_with_merchant_task,
             ingest_campaign_data_task,
             ingest_transactional_campaign_data_task,
             ingest_line_item_prices_task,

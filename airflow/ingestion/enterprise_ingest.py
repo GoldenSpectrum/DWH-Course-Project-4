@@ -1,31 +1,44 @@
 import pandas as pd
-from ingestion.db import load_to_staging
+from ingestion.db import load_to_staging, truncate_table
 
 DATA_PATH = "/opt/airflow/data_raw/enterprise/"
 
 def ingest_merchant_data():
+    truncate_table("stg_merchant_data")
+
     df = pd.read_html(DATA_PATH + "merchant_data.html")[0]
     df = df.drop(columns=["Unnamed: 0"])
     load_to_staging(df, "stg_merchant_data")
 
 
 def ingest_staff_data():
+    truncate_table("stg_staff_data")
+
     df = pd.read_html(DATA_PATH + "staff_data.html")[0]
     df = df.drop(columns=["Unnamed: 0"])
     load_to_staging(df, "stg_staff_data")
 
 
-def ingest_order_with_merchant1():
-    df = pd.read_parquet(DATA_PATH + "order_with_merchant_data1.parquet")
-    load_to_staging(df, "stg_order_with_merchant")
+def ingest_order_with_merchant():
+    truncate_table("stg_order_with_merchant")
 
+    files = [
+        "order_with_merchant_data1.parquet",
+        "order_with_merchant_data2.parquet",
+        "order_with_merchant_data3.csv",
+    ]
 
-def ingest_order_with_merchant2():
-    df = pd.read_parquet(DATA_PATH + "order_with_merchant_data2.parquet")
-    load_to_staging(df, "stg_order_with_merchant")
+    for file in files:
+        path = DATA_PATH + file
 
+        if file.endswith(".csv"):
+            df = pd.read_csv(path)
 
-def ingest_order_with_merchant3():
-    df = pd.read_csv(DATA_PATH + "order_with_merchant_data3.csv")
-    df = df.drop(columns=["Unnamed: 0"])
-    load_to_staging(df, "stg_order_with_merchant")
+            if "Unnamed: 0" in df.columns:
+                df = df.drop(columns=["Unnamed: 0"])
+
+        else:
+            df = pd.read_parquet(path)
+
+        load_to_staging(df, "stg_order_with_merchant")
+

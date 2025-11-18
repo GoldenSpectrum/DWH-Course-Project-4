@@ -6,13 +6,13 @@ def get_engine():
         "postgresql+psycopg2://postgres:postgres@postgres:5432/shopzada"
     )
 
-
-def load_to_staging(df, table_name, truncate=True):
+def truncate_table(table_name):
     engine = get_engine()
+    engine.execute(f"TRUNCATE TABLE {table_name}")
 
-    if truncate:
-        with engine.connect() as conn:
-            conn.execute(f"TRUNCATE TABLE {table_name};")
+
+def load_to_staging(df, table_name):
+    engine = get_engine()
 
     df.to_sql(
         table_name,

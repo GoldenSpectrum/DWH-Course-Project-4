@@ -1,10 +1,12 @@
 import pandas as pd
-from ingestion.db import load_to_staging
+from ingestion.db import load_to_staging, truncate_table
 from ingestion.utils import normalize_df
 
 DATA_PATH = "/opt/airflow/data_raw/operations/"
 
 def ingest_line_item_prices():
+    truncate_table("stg_line_item_prices")
+
     files = [
         "line_item_data_prices1.csv",
         "line_item_data_prices2.csv",
@@ -24,6 +26,8 @@ def ingest_line_item_prices():
 
 
 def ingest_line_item_products():
+    truncate_table("stg_line_item_products")
+
     files = [
         "line_item_data_products1.csv",
         "line_item_data_products2.csv",
@@ -43,6 +47,8 @@ def ingest_line_item_products():
 
 
 def ingest_order_data():
+    truncate_table("stg_order_data")
+
     files = [
         "order_data_20211001-20220101.csv",
         "order_data_20200701-20211001.pickle",
@@ -79,6 +85,8 @@ def ingest_order_data():
 
 
 def ingest_order_delays():
+    truncate_table("stg_order_delays")
+
     df = pd.read_html(DATA_PATH + "order_delays.html")[0]
 
     expected = ["index_raw", "order_id", "delay in days"]
