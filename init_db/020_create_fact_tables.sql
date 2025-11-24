@@ -1,0 +1,63 @@
+-- ================================
+-- FACT TABLES
+-- ================================
+
+CREATE TABLE fact_orders (
+    order_id           VARCHAR PRIMARY KEY,
+    user_id            VARCHAR,
+    transaction_date   DATE,
+    estimated_arrival  INT,
+    merchant_id        VARCHAR,
+    staff_id           VARCHAR,
+
+    CONSTRAINT fk_orders_user
+        FOREIGN KEY (user_id) REFERENCES dim_user(user_id),
+
+    CONSTRAINT fk_orders_merchant
+        FOREIGN KEY (merchant_id) REFERENCES dim_merchant(merchant_id),
+
+    CONSTRAINT fk_orders_staff
+        FOREIGN KEY (staff_id) REFERENCES dim_staff(staff_id),
+
+    CONSTRAINT fk_orders_date
+        FOREIGN KEY (transaction_date) REFERENCES dim_date(date)
+);
+
+CREATE TABLE fact_line_items (
+    order_id       VARCHAR,
+    product_id     VARCHAR,
+    price          DECIMAL(10,2),
+    quantity       INT,
+    product_name   VARCHAR,
+
+    CONSTRAINT fk_lineitems_order
+        FOREIGN KEY (order_id) REFERENCES fact_orders(order_id),
+
+    CONSTRAINT fk_lineitems_product
+        FOREIGN KEY (product_id) REFERENCES dim_product(product_id)
+);
+
+CREATE TABLE fact_campaign_transactions (
+    transaction_date   DATE,
+    campaign_id        VARCHAR,
+    order_id           VARCHAR,
+    estimated_arrival  INT,
+    availed            BOOLEAN,
+
+    CONSTRAINT fk_campaign_txn_campaign
+        FOREIGN KEY (campaign_id) REFERENCES dim_campaign(campaign_id),
+
+    CONSTRAINT fk_campaign_txn_order
+        FOREIGN KEY (order_id) REFERENCES fact_orders(order_id),
+
+    CONSTRAINT fk_campaign_txn_date
+        FOREIGN KEY (transaction_date) REFERENCES dim_date(date)
+);
+
+CREATE TABLE fact_order_delays (
+    order_id        VARCHAR PRIMARY KEY,
+    delay_in_days   INT,
+
+    CONSTRAINT fk_delays_order
+        FOREIGN KEY (order_id) REFERENCES fact_orders(order_id)
+);

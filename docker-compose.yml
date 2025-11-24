@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: shopzada
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init_staging:/docker-entrypoint-initdb.d
+      - ./init_db:/docker-entrypoint-initdb.d
 
   airflow:
     build: .
