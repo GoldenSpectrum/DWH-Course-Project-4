@@ -15,40 +15,39 @@ def transform_fact_orders():
     )
 
     df = df.rename(columns={
-        "estimated arrival": "estimated_arrival",
-        "delay in days": "delay_in_days"
+        "estimated arrival": "order_estimated_arrival",
+        "delay in days": "order_delay_in_days",
+        "transaction_date": "order_transaction_date"
     })
 
-    # CLEAN estimated_arrival
-    df["estimated_arrival"] = (
-        df["estimated_arrival"]
+    df["order_estimated_arrival"] = (
+        df["order_estimated_arrival"]
         .astype(str)
         .str.extract(r"(\d+)")
     )[0]
 
-    df["estimated_arrival"] = (
-        pd.to_numeric(df["estimated_arrival"], errors="coerce")
-        .fillna(0)
-        .astype(int)
+    df["order_estimated_arrival"] = (
+        pd.to_numeric(df["order_estimated_arrival"], errors="coerce")
+          .fillna(0)
+          .astype(int)
     )
 
-    # CLEAN delay_in_days
-    df["delay_in_days"] = (
-        df["delay_in_days"]
+    df["order_delay_in_days"] = (
+        df["order_delay_in_days"]
         .astype(str)
         .str.extract(r"(\d+)")
     )[0]
 
-    df["delay_in_days"] = (
-        pd.to_numeric(df["delay_in_days"], errors="coerce")
-        .fillna(0)
-        .astype(int)
+    df["order_delay_in_days"] = (
+        pd.to_numeric(df["order_delay_in_days"], errors="coerce")
+          .fillna(0)
+          .astype(int)
     )
 
     df = df[[
-        "order_id", "user_id",
-        "transaction_date", "estimated_arrival",
-        "merchant_id", "staff_id", "delay_in_days"
+        "order_id", "user_id", "order_transaction_date",
+        "order_estimated_arrival", "merchant_id",
+        "staff_id", "order_delay_in_days"
     ]]
 
     load_df(df, "fact_orders")

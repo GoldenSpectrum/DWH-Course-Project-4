@@ -10,7 +10,6 @@ def truncate_table(table_name):
     engine = get_engine()
     engine.execute(f"TRUNCATE TABLE {table_name}")
 
-
 def load_to_staging(df, table_name):
     engine = get_engine()
 

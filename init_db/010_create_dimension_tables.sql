@@ -1,70 +1,66 @@
--- ================================
--- DIMENSION TABLES
--- ================================
 
 CREATE TABLE IF NOT EXISTS dim_user (
-    user_id            VARCHAR PRIMARY KEY,
-    creation_date      DATE,
-    name               VARCHAR,
-    street             VARCHAR,
-    state              VARCHAR,
-    city               VARCHAR,
-    country            VARCHAR,
-    birthdate          DATE,
-    gender             VARCHAR,
-    device_address     VARCHAR,
-    user_type          VARCHAR,
-    job_title          VARCHAR,
-    job_level          VARCHAR,
-    credit_card_number BIGINT,
-    issuing_bank       VARCHAR
+    user_id                 VARCHAR PRIMARY KEY,
+    user_creation_date      DATE,
+    user_full_name          VARCHAR,
+    user_street_address     VARCHAR,
+    user_state              VARCHAR,
+    user_city               VARCHAR,
+    user_country            VARCHAR,
+    user_birthdate          DATE,
+    user_gender             VARCHAR,
+    user_device_address     VARCHAR,
+    user_type               VARCHAR,
+    user_job_title          VARCHAR,
+    user_job_level          VARCHAR,
+    user_credit_card_number BIGINT,
+    user_issuing_bank       VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS dim_merchant (
-    merchant_id     VARCHAR PRIMARY KEY,
-    creation_date   DATE,
-    name            VARCHAR,
-    street          VARCHAR,
-    state           VARCHAR,
-    city            VARCHAR,
-    country         VARCHAR,
-    contact_number  VARCHAR
+    merchant_id            VARCHAR PRIMARY KEY,
+    merchant_creation_date DATE,
+    merchant_name          VARCHAR,
+    merchant_street_address VARCHAR,
+    merchant_state         VARCHAR,
+    merchant_city          VARCHAR,
+    merchant_country       VARCHAR,
+    merchant_contact_number VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS dim_staff (
-    staff_id        VARCHAR PRIMARY KEY,
-    name            VARCHAR,
-    job_level       VARCHAR,
-    street          VARCHAR,
-    state           VARCHAR,
-    city            VARCHAR,
-    country         VARCHAR,
-    contact_number  VARCHAR,
-    creation_date   DATE
+    staff_id              VARCHAR PRIMARY KEY,
+    staff_full_name       VARCHAR,
+    staff_job_level       VARCHAR,
+    staff_street_address  VARCHAR,
+    staff_state           VARCHAR,
+    staff_city            VARCHAR,
+    staff_country         VARCHAR,
+    staff_contact_number  VARCHAR,
+    staff_creation_date   DATE
 );
 
 CREATE TABLE IF NOT EXISTS dim_product (
-    product_id      VARCHAR PRIMARY KEY,
-    product_name    VARCHAR,
-    product_type    VARCHAR,
-    price           DECIMAL(10,2)
+    product_id          VARCHAR PRIMARY KEY,
+    product_name        VARCHAR,
+    product_type        VARCHAR,
+    product_price       DECIMAL(10,2)
 );
 
 CREATE TABLE IF NOT EXISTS dim_campaign (
     campaign_id            VARCHAR PRIMARY KEY,
     campaign_name          VARCHAR,
     campaign_description   TEXT,
-    discount               DECIMAL(5,2)
+    campaign_discount      DECIMAL(5,2)
 );
 
--- Date dimension: date is the PK
 CREATE TABLE IF NOT EXISTS dim_date (
-    date DATE PRIMARY KEY,
-    year INT,
-    quarter INT,
-    month INT,
-    day INT,
-    day_of_week INT,
-    is_weekend BOOLEAN
+    date_id      SERIAL PRIMARY KEY,
+    date_value   DATE UNIQUE NOT NULL,
+    date_year    INT,
+    date_quarter INT,
+    date_month   INT,
+    date_day     INT,
+    day_of_week  INT,
+    is_weekend   BOOLEAN
 );
-

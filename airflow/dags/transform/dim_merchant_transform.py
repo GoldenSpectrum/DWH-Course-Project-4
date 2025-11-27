@@ -5,17 +5,31 @@ def transform_dim_merchant():
 
     df = fetch_df("SELECT * FROM stg_merchant_data")
 
-    df = df.rename(columns={"merchant_name": "name"})
-
+    # dedupe on latest creation_date
     df = (
         df.sort_values("creation_date")
           .drop_duplicates(subset=["merchant_id"], keep="last")
     )
 
+    df = df.rename(columns={
+        "creation_date": "merchant_creation_date",
+        "name": "merchant_name",
+        "street": "merchant_street_address",
+        "state": "merchant_state",
+        "city": "merchant_city",
+        "country": "merchant_country",
+        "contact_number": "merchant_contact_number"
+    })
+
     df = df[[
-        "merchant_id", "creation_date", "name",
-        "street", "state", "city", "country",
-        "contact_number"
+        "merchant_id",
+        "merchant_creation_date",
+        "merchant_name",
+        "merchant_street_address",
+        "merchant_state",
+        "merchant_city",
+        "merchant_country",
+        "merchant_contact_number"
     ]]
 
     load_df(df, "dim_merchant")

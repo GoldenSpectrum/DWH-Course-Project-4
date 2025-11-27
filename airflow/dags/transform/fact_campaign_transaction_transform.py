@@ -5,21 +5,23 @@ def transform_fact_campaign_transaction():
 
     df = fetch_df("SELECT * FROM stg_transactional_campaign")
 
-    # Clean "estimated arrival" BEFORE renaming
-    df["estimated_arrival"] = (
+    df["txn_estimated_arrival"] = (
         df["estimated arrival"]
         .astype(str)
         .str.extract(r"(\d+)")
         .astype(int)
     )
 
-    # Now select the final columns (and drop the old name)
+    df = df.rename(columns={
+        "availed": "transaction_availed"
+    })
+
     df = df[[
         "transaction_date",
         "campaign_id",
         "order_id",
-        "estimated_arrival",
-        "availed"
+        "txn_estimated_arrival",
+        "transaction_availed"
     ]]
 
     load_df(df, "fact_campaign_transactions")

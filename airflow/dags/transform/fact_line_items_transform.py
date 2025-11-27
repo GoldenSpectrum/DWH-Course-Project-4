@@ -6,36 +6,34 @@ def transform_fact_line_items():
     prices = fetch_df("SELECT * FROM stg_line_item_prices")
     products = fetch_df("SELECT * FROM stg_line_item_products")
 
-    # Fix quantity
-    prices["quantity"] = (
+    prices["line_item_quantity"] = (
         prices["quantity"]
         .astype(str)
         .str.extract(r"(\d+)")
         .astype(int)
     )
 
-    # DEDUPE
-    # Prices: one row per (order_id)
     prices = (
-        prices
-        .sort_values("order_id")
-        .drop_duplicates(subset=["order_id"], keep="last")
+        prices.sort_values("order_id")
+              .drop_duplicates(subset=["order_id"], keep="last")
     )
 
-    # Products: one row per (order_id, product_id)
     products = (
-        products
-        .sort_values(["order_id", "product_id"])
-        .drop_duplicates(subset=["order_id", "product_id"], keep="last")
+        products.sort_values(["order_id", "product_id"])
+                .drop_duplicates(subset=["order_id", "product_id"], keep="last")
     )
 
-    # Merge WITH the correct join
     df = prices.merge(products, on="order_id", how="left")
 
-    df["line_total"] = df["price"] * df["quantity"]
+    df = df.rename(columns={
+        "price": "line_item_price",
+        "product_name": "line_item_product_name"
+    })
 
     df = df[[
-        "order_id", "product_id", "price", "quantity", "product_name"
+        "order_id", "product_id",
+        "line_item_price", "line_item_quantity",
+        "line_item_product_name"
     ]]
 
     load_df(df, "fact_line_items")
