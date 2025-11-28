@@ -18,6 +18,9 @@ def ingest_line_item_prices():
 
     expected = ["index_raw", "order_id", "price", "quantity"]
 
+    all_frames = []
+
+    # 1️⃣ Read all raw files and normalize them
     for file in files:
         path = DATA_PATH + file
 
@@ -27,9 +30,26 @@ def ingest_line_item_prices():
             df = pd.read_parquet(path)
 
         df = normalize_df(df, expected)
-        df = dedupe(df, key="order_id")       # safety dedupe
+        all_frames.append(df)
 
-        load_to_staging(df, "stg_line_item_prices")
+    # 2️⃣ Now combine all sources
+    df = pd.concat(all_frames, ignore_index=True)
+
+    # 3️⃣ Clean quantity
+    df["quantity"] = (
+        df["quantity"]
+        .astype(str)
+        .str.extract(r"(\d+)")
+        .astype(int)
+    )
+
+    # 4️⃣ True dedupe (cross-file)
+    # If you want one record per order_id + price + quantity:
+    df = dedupe(df, key="order_id")
+
+    # 5️⃣ Load final clean table
+    load_to_staging(df, "stg_line_item_prices")
+
 
 
 # --------------------------------------------------------
@@ -46,18 +66,25 @@ def ingest_line_item_products():
 
     expected = ["index_raw", "order_id", "product_name", "product_id"]
 
-    for file in files:
-        path = DATA_PATH + file
+    all_frames = []
 
+    # Load ALL files first
+    for file in files:
         if file.endswith(".csv"):
-            df = pd.read_csv(path)
+            df = pd.read_csv(DATA_PATH + file)
         else:
-            df = pd.read_parquet(path)
+            df = pd.read_parquet(DATA_PATH + file)
 
         df = normalize_df(df, expected)
-        df = dedupe(df, key="order_id")      # safety dedupe
+        all_frames.append(df)
 
-        load_to_staging(df, "stg_line_item_products")
+    df = pd.concat(all_frames, ignore_index=True)
+
+    # True dedupe across files
+    df = dedupe(df, key=["order_id", "product_id"])
+
+    load_to_staging(df, "stg_line_item_products")
+
 
 
 # --------------------------------------------------------
