@@ -1,7 +1,7 @@
 import sys
 import os
 from datetime import datetime
-
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.empty import EmptyOperator
@@ -57,6 +57,7 @@ with DAG(
     schedule_interval="@daily",
     catchup=False,
     description="End-to-end ShopZada ingestion + transform pipeline",
+    template_searchpath="/opt/airflow", 
 ) as dag:
 
     # ==================================================
@@ -118,6 +119,47 @@ with DAG(
         task_id="transform_fact_delays",
         python_callable=transform_fact_order_delays
     )
+    
+    finish_facts = EmptyOperator(task_id="finish_facts")
+
+    create_order_analytics_views = PostgresOperator(
+        task_id="create_order_analytics_views",
+        postgres_conn_id="shopzada_postgres",
+        sql="analytics/order_analytics.sql"
+    )
+
+    create_line_item_analytics_views = PostgresOperator(
+        task_id="create_line_item_analytics_views",
+        postgres_conn_id="shopzada_postgres",
+        sql="analytics/line_item_analytics.sql"
+    )
+
+    create_campaign_analytics_views = PostgresOperator(
+        task_id="create_campaign_analytics_views",
+        postgres_conn_id="shopzada_postgres",
+        sql="analytics/campaign_analytics.sql"
+    )
+
+    create_delivery_analytics_views = PostgresOperator(
+        task_id="create_delivery_analytics_views",
+        postgres_conn_id="shopzada_postgres",
+        sql="analytics/delivery_performance_analytics.sql"
+    )
+
+    # All facts → Analytics views
+    fact_tasks = [
+        fact_line_items,
+        fact_campaign,
+        fact_delays,
+    ]
+
+    analytics_tasks = [
+        create_order_analytics_views,
+        create_line_item_analytics_views,
+        create_campaign_analytics_views,
+        create_delivery_analytics_views,
+    ]
+
 
     # ==================================================
     # DEPENDENCIES
@@ -125,5 +167,11 @@ with DAG(
     ingest_product_list_task >> ingest_tasks >> finish_ingestion
     finish_ingestion >> dim_tasks
 
+    # Dimensions → Facts
     dim_tasks >> fact_orders
-    fact_orders >> [fact_line_items, fact_campaign, fact_delays]
+    fact_orders >> fact_tasks >> finish_facts
+    finish_facts >> analytics_tasks
+
+
+
+
