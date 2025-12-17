@@ -1,16 +1,14 @@
 import sys
 import os
-from airflow.operators.empty import EmptyOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from datetime import datetime
 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.empty import EmptyOperator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from datetime import datetime
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-
-# Import your ingestion functions
+# ================= INGESTION IMPORTS =================
 from ingestion.business_ingest import ingest_product_list
 from ingestion.customer_ingest import (
     ingest_user_job,
@@ -33,137 +31,99 @@ from ingestion.ops_ingest import (
     ingest_order_delays
 )
 
+# ================= TRANSFORM IMPORTS =================
+from transform.dim_user_transform import transform_dim_user
+from transform.dim_merchant_transform import transform_dim_merchant
+from transform.dim_staff_transform import transform_dim_staff
+from transform.dim_product_transform import transform_dim_product
+from transform.dim_campaign_transform import transform_dim_campaign
+from transform.dim_date_transform import transform_dim_date
 
-# -----------------------------------------
-# DAG DEFAULT ARGS
-# -----------------------------------------
+from transform.fact_orders_transform import transform_fact_orders
+from transform.fact_line_items_transform import transform_fact_line_items
+from transform.fact_campaign_transaction_transform import transform_fact_campaign_transaction
+from transform.fact_order_delays_transform import transform_fact_order_delays
+
+
 default_args = {
     "owner": "shopzada_data_team",
     "start_date": datetime(2025, 1, 1),
     "retries": 0,
 }
 
-# -----------------------------------------
-# DAG DECLARATION
-# -----------------------------------------
 with DAG(
-    dag_id="shopzada_pipeline",
+    dag_id="shopzada_full_pipeline",
     default_args=default_args,
     schedule_interval="@daily",
     catchup=False,
-    description="End-to-end staging ingestion for ShopZada DWH",
+    description="End-to-end ShopZada ingestion + transform pipeline",
 ) as dag:
 
-    # -----------------------------------------
-    # BUSINESS DEPARTMENT TASKS
-    # -----------------------------------------
+    # ==================================================
+    # INGESTION TASKS
+    # ==================================================
     ingest_product_list_task = PythonOperator(
         task_id="ingest_product_list",
         python_callable=ingest_product_list
     )
 
-    # -----------------------------------------
-    # CUSTOMER MANAGEMENT TASKS
-    # -----------------------------------------
-    ingest_user_job_task = PythonOperator(
-        task_id="ingest_user_job",
-        python_callable=ingest_user_job
+    ingest_tasks = [
+        PythonOperator(task_id="ingest_user_job", python_callable=ingest_user_job),
+        PythonOperator(task_id="ingest_user_data", python_callable=ingest_user_data),
+        PythonOperator(task_id="ingest_user_credit_card", python_callable=ingest_user_credit_card),
+        PythonOperator(task_id="ingest_merchant_data", python_callable=ingest_merchant_data),
+        PythonOperator(task_id="ingest_staff_data", python_callable=ingest_staff_data),
+        PythonOperator(task_id="ingest_order_with_merchant", python_callable=ingest_order_with_merchant),
+        PythonOperator(task_id="ingest_campaign_data", python_callable=ingest_campaign_data),
+        PythonOperator(task_id="ingest_transactional_campaign_data", python_callable=ingest_transactional_campaign_data),
+        PythonOperator(task_id="ingest_line_item_prices", python_callable=ingest_line_item_prices),
+        PythonOperator(task_id="ingest_line_item_products", python_callable=ingest_line_item_products),
+        PythonOperator(task_id="ingest_order_data", python_callable=ingest_order_data),
+        PythonOperator(task_id="ingest_order_delays", python_callable=ingest_order_delays),
+    ]
+
+    finish_ingestion = EmptyOperator(task_id="finish_ingestion")
+
+    # ==================================================
+    # DIMENSION TRANSFORMS
+    # ==================================================
+    dim_tasks = [
+        PythonOperator(task_id="transform_dim_user", python_callable=transform_dim_user),
+        PythonOperator(task_id="transform_dim_merchant", python_callable=transform_dim_merchant),
+        PythonOperator(task_id="transform_dim_staff", python_callable=transform_dim_staff),
+        PythonOperator(task_id="transform_dim_product", python_callable=transform_dim_product),
+        PythonOperator(task_id="transform_dim_campaign", python_callable=transform_dim_campaign),
+        PythonOperator(task_id="transform_dim_date", python_callable=transform_dim_date),
+    ]
+
+    # ==================================================
+    # FACT TRANSFORMS
+    # ==================================================
+    fact_orders = PythonOperator(
+        task_id="transform_fact_orders",
+        python_callable=transform_fact_orders
     )
 
-    ingest_user_data_task = PythonOperator(
-        task_id="ingest_user_data",
-        python_callable=ingest_user_data
+    fact_line_items = PythonOperator(
+        task_id="transform_fact_line_items",
+        python_callable=transform_fact_line_items
     )
 
-    ingest_user_credit_card_task = PythonOperator(
-        task_id="ingest_user_credit_card",
-        python_callable=ingest_user_credit_card
+    fact_campaign = PythonOperator(
+        task_id="transform_fact_campaign",
+        python_callable=transform_fact_campaign_transaction
     )
 
-    # -----------------------------------------
-    # ENTERPRISE TASKS
-    # -----------------------------------------
-    ingest_merchant_data_task = PythonOperator(
-        task_id="ingest_merchant_data",
-        python_callable=ingest_merchant_data
+    fact_delays = PythonOperator(
+        task_id="transform_fact_delays",
+        python_callable=transform_fact_order_delays
     )
 
-    ingest_staff_data_task = PythonOperator(
-        task_id="ingest_staff_data",
-        python_callable=ingest_staff_data
-    )
+    # ==================================================
+    # DEPENDENCIES
+    # ==================================================
+    ingest_product_list_task >> ingest_tasks >> finish_ingestion
+    finish_ingestion >> dim_tasks
 
-    ingest_order_with_merchant_task = PythonOperator(
-        task_id="ingest_order_with_merchant",
-        python_callable=ingest_order_with_merchant
-    )
-
-
-    # -----------------------------------------
-    # MARKETING TASKS
-    # -----------------------------------------
-    ingest_campaign_data_task = PythonOperator(
-        task_id="ingest_campaign_data",
-        python_callable=ingest_campaign_data
-    )
-
-    ingest_transactional_campaign_data_task = PythonOperator(
-        task_id="ingest_transactional_campaign_data",
-        python_callable=ingest_transactional_campaign_data
-    )
-
-    # -----------------------------------------
-    # OPERATIONS TASKS
-    # -----------------------------------------
-    ingest_line_item_prices_task = PythonOperator(
-        task_id="ingest_line_item_prices",
-        python_callable=ingest_line_item_prices
-    )
-
-    ingest_line_item_products_task = PythonOperator(
-        task_id="ingest_line_item_products",
-        python_callable=ingest_line_item_products
-    )
-
-    ingest_order_data_task = PythonOperator(
-        task_id="ingest_order_data",
-        python_callable=ingest_order_data
-    )
-
-    ingest_order_delays_task = PythonOperator(
-        task_id="ingest_order_delays",
-        python_callable=ingest_order_delays
-    )
-
-    finish_ingestion = EmptyOperator(
-        task_id="finish_ingestion"
-    )
-
-    trigger_transform = TriggerDagRunOperator(
-        task_id="trigger_transform_pipeline",
-        trigger_dag_id="shopzada_transform_dag"
-    )
-
-    # ===================================================
-    # DAG DEPENDENCIES
-    # ===================================================
-    
-    (
-        ingest_product_list_task
-        >> [
-            ingest_user_job_task,
-            ingest_user_data_task,
-            ingest_user_credit_card_task,
-            ingest_merchant_data_task,
-            ingest_staff_data_task,
-            ingest_order_with_merchant_task,
-            ingest_campaign_data_task,
-            ingest_transactional_campaign_data_task,
-            ingest_line_item_prices_task,
-            ingest_line_item_products_task,
-            ingest_order_data_task,
-            ingest_order_delays_task,
-        ]
-         >> finish_ingestion
-         >> trigger_transform
-    )
+    dim_tasks >> fact_orders
+    fact_orders >> [fact_line_items, fact_campaign, fact_delays]
