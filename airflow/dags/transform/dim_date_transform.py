@@ -4,7 +4,11 @@ import pandas as pd
 def transform_dim_date():
 
     # Fetch raw transaction dates from staging
-    order_dates = fetch_df("SELECT transaction_date FROM stg_order_data")
+    order_dates = fetch_df("""
+        SELECT transaction_date AS date_value FROM stg_order_data
+        UNION
+        SELECT transaction_date AS date_value FROM stg_transactional_campaign
+    """)
 
     # Clean, sort, unique
     dates = (
