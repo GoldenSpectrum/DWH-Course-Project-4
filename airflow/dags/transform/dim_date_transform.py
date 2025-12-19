@@ -12,7 +12,7 @@ def transform_dim_date():
 
     # Clean, sort, unique
     dates = (
-        pd.to_datetime(order_dates["transaction_date"])
+        pd.to_datetime(order_dates["date_value"], errors="coerce")
         .dropna()
         .sort_values()
         .unique()
